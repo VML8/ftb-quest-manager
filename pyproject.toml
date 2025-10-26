@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ftb-quest-viewer"
+name = "ftb-quest-manager"
 version = "1.0.0"
 description = "A Python tool for viewing and navigating FTB (Feed The Beast) quest data"
 readme = "README.md"
@@ -29,13 +29,13 @@ dependencies = [
 ]
 
 [project.scripts]
-ftb-quest-viewer = "cli:main"
-ftb-viewer = "cli:main"
+ftb-quest-manager = "cli:main"
+ftb-manager = "cli:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/ftb-quest-viewer"
-Repository = "https://github.com/yourusername/ftb-quest-viewer"
-Issues = "https://github.com/yourusername/ftb-quest-viewer/issues"
+Homepage = "https://github.com/VML8/ftb-quest-manager"
+Repository = "https://github.com/VML8/ftb-quest-manager"
+Issues = "https://github.com/VML8/ftb-quest-manager/issues"
 
 [tool.setuptools]
 packages = ["module"]
