@@ -1,0 +1,58 @@
+name: Python Package CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build_and_test:
+    name: Build, Test, and Lint on ${{ matrix.python-version }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.8', '3.10', '3.12']
+        # The default template uses 3.9, 3.10, 3.11. We'll stick to your requested versions (3.8, 3.10, 3.12).
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      # Using v5 for stable setup
+      uses: actions/setup-python@v5 
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip' # Cache dependencies for faster builds
+    
+    - name: Install dependencies and tools
+      run: |
+        python -m pip install --upgrade pip
+        # Install dependencies from requirements.txt, plus testing and linting tools
+        pip install -r requirements.txt
+        pip install pytest flake8 build
+        # Install the package itself in editable mode for testing
+        pip install -e . 
+        
+    - name: Lint with Flake8
+      run: |
+        echo "Running Flake8 on the project code."
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings. Max line length set to 120.
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
+
+    - name: Run Tests with pytest
+      # This uses your specific, full test file and ignores the local config file.
+      run: |
+        pytest tests/test_full_suite.py -v --ignore=tests/static_paths_config.py
+
+    - name: Build package distributions
+      # Building the package is the final check that all metadata and files are correct.
+      run: |
+        python -m build
+        
+    # Deployment steps are intentionally omitted for now.
