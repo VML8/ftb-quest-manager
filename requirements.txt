@@ -1,4 +1,4 @@
-﻿annotated-types==0.7.0
+annotated-types==0.7.0
 ftb-snbt-lib==0.4.0
 pydantic==2.12.3
 pydantic_core==2.41.4
@@ -6,4 +6,3 @@ typing-inspection==0.4.2
 typing_extensions==4.15.0
 wheel==0.45.1
 colorama>=0.4.6,<1.0.0
-
