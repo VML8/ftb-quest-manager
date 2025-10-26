@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ftb-quest-viewer"
+version = "1.0.0"
+description = "A Python tool for viewing and navigating FTB (Feed The Beast) quest data"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "FTB Quest Viewer Developer", email = "developer@example.com"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "pydantic>=2.0.0",
+    "ftb_snbt_lib>=1.0.0"
+]
+
+[project.scripts]
+ftb-quest-viewer = "cli:main"
+ftb-viewer = "cli:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/ftb-quest-viewer"
+Repository = "https://github.com/yourusername/ftb-quest-viewer"
+Issues = "https://github.com/yourusername/ftb-quest-viewer/issues"
+
+[tool.setuptools]
+packages = ["module"]
+package-dir = {"" = "."}
+
+[tool.setuptools.package-data]
+module = ["*.py", "*.txt", "*.md"]

@@ -1,0 +1,16 @@
+# Python
+module/__pycache__
+*.py[cod]
+*$py.class
+
+# venv
+.venv/
+venv/
+env/
+/ftb_quests_viewer_venv/
+
+#egg-info
+*.egg-info/
+*.dist-info/
+
+Thumbs.db
