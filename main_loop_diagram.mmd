@@ -1,0 +1,64 @@
+graph TD
+    A[Start: main Function Call] --> B(Call load_data_for_cli);
+    B --> C{Data Loaded Successfully?};
+    C -- No --> D[Exit: Show Error];
+    C -- Yes --> E(Start Interactive CLI);
+    
+    subgraph Main Loop
+    
+        E --> F{Current Chapter Selected?};
+        
+        %% --- Chapter Selection (Current Chapter is NULL) ---
+        F -- No (Chapter Level) --> G(Display Chapters List);
+        G --> H(Get User Input: index or key);
+        H --> I{Command Match?};
+        
+        I -- index/key found --> J(Set Current Chapter);
+        J --> F;
+        
+        I -- EXIT --> K[Stop Loop: Print Exit Message];
+        K --> L[End];
+        
+        I -- Invalid --> G;
+        
+        %% --- Quest Selection (Current Chapter is set) ---
+        F -- Yes (Quest Level) --> M(Display Quests in Chapter);
+        M --> N(Get User Input: index, back, edit, or exit);
+        N --> O{Command Match?};
+        
+        O -- index found --> P(Display Quest Details);
+        P --> Q{Get Detail Input: task N, reward N, back, edit};
+        
+        Q -- task N --> R(Display Task Details);
+        R --> P;
+        
+        Q -- reward N --> S(Display Reward Details);
+        S --> P;
+        
+        Q -- back --> M;
+        
+        Q -- edit --> T(Edit Sub-Menu);
+        T --> U{Get Edit Input: e.g., position x y};
+        U --> V(Execute Edit Function);
+        V --> T;
+        
+        Q -- exit --> L;
+        
+        O -- BACK --> F;
+        
+        O -- EDIT --> T;
+        
+        O -- EXIT --> L;
+        
+        O -- Invalid --> M;
+
+    end
+    
+    L
+    
+    style A fill:#D4EDDA,stroke:#155724,color:#155724
+    style L fill:#F8D7DA,stroke:#721C24,color:#721C24
+    style E fill:#D1ECF1,stroke:#0C5460,color:#0C5460
+    style J fill:#D1ECF1,stroke:#0C5460,color:#0C5460
+    style K fill:#F8D7DA,stroke:#721C24,color:#721C24
+    style C fill:#FFF3CD,stroke:#856404,color:#856404
