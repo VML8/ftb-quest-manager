@@ -4,9 +4,11 @@ from setuptools import setup, find_packages
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-# Read requirements from requirements.txt
-with open("requirements.txt", "r", encoding="utf-8-sig") as fh:
-    requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+# NOTE: Dependencies are now managed exclusively in pyproject.toml 
+# and will be picked up automatically by the build system.
+# # Read requirements from requirements.txt
+# with open("requirements.txt", "r", encoding="utf-8-sig") as fh:
+#     requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
 
 setup(
     name="ftb-quest-manager",
@@ -29,7 +31,8 @@ setup(
         "Programming Language :: Python :: 3.12",
     ],
     python_requires=">=3.10",
-    install_requires=requirements,
+    # Removed install_requires since dependencies are in pyproject.toml
+    # install_requires=requirements,
     entry_points={
         "console_scripts": [
             "ftb-quest-manager=cli:main",
