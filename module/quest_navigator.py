@@ -1,13 +1,17 @@
+from colorama import init, Fore, Back, Style
+
 from typing import Dict
 
 from .quest_models import Chapter, Quest, Task, Reward
 
+init(autoreset=True)
+
 
 def display_chapters(data: Dict[str, Chapter]) -> None:
     """Display the list of chapters."""
-    print("\n" + "="*40)
-    print("CHAPTERS")
-    print("="*40)
+    print("\n" + Fore.CYAN + "="*40)
+    print(Fore.YELLOW + Style.BRIGHT + "CHAPTERS")
+    print(Fore.CYAN + "="*40)
 
     chapter_keys = sorted(data.keys())
     for i, key in enumerate(chapter_keys):
@@ -17,9 +21,9 @@ def display_chapters(data: Dict[str, Chapter]) -> None:
 
 def display_quests(chapter: Chapter) -> None:
     """Display the quests within a chapter."""
-    print("\n" + "="*40)
-    print(f"CHAPTER: {chapter.filename.upper()} (Quests: {len(chapter.quests)})")
-    print("="*40)
+    print("\n" + Fore.CYAN + "="*40)
+    print(Fore.YELLOW + Style.BRIGHT + f"CHAPTER: {chapter.filename.upper()} (Quests: {len(chapter.quests)})")
+    print(Fore.CYAN + "="*40)
 
     for i, quest in enumerate(chapter.quests):
         deps = f"({len(quest.dependencies)} deps)" if quest.dependencies else ""
@@ -28,14 +32,14 @@ def display_quests(chapter: Chapter) -> None:
 
 def display_quest_details(quest: Quest) -> None:
     """Display details of a single quest."""
-    print("\n" + "="*60)
-    print(f"QUEST DETAILS: {quest.id}")
-    print("="*60)
+    print("\n" + Fore.CYAN + "="*60)
+    print(Fore.YELLOW + Style.BRIGHT + f"QUEST DETAILS: {quest.id}")
+    print(Fore.CYAN + "="*60)
     print(f"Coords: ({quest.x}, {quest.y})")
     print(f"Dependencies: {quest.dependencies if quest.dependencies else 'None'}")
     print(f"Hidden Until Startable: {quest.hide_details_until_startable}")
 
-    print("\n--- TASKS ---")
+    print(Fore.GREEN + "\n--- TASKS ---")
     if not quest.tasks:
         print("No tasks defined.")
     else:
@@ -46,7 +50,7 @@ def display_quest_details(quest: Quest) -> None:
             if task.advancement:
                 print(f"    Advancement: {task.advancement}")
 
-    print("\n--- REWARDS ---")
+    print(Fore.GREEN + "\n--- REWARDS ---")
     if not quest.rewards:
         print("No rewards defined.")
     else:
@@ -61,10 +65,10 @@ def display_quest_details(quest: Quest) -> None:
 
 def display_task_details(task: Task, quest_id: str = "Unknown Quest") -> None:
     """Display comprehensive details of a task."""
-    print("\n" + "="*50)
-    print(f"TASK DETAILS: {task.type.upper()}")
+    print("\n" + Fore.CYAN + "="*50)
+    print(Fore.YELLOW + Style.BRIGHT + f"TASK DETAILS: {task.type.upper()}")
     print(f"Quest: {quest_id}")
-    print("="*50)
+    print(Fore.CYAN + "="*50)
 
     print(f"Task ID: {task.id}")
     print(f"Type: {task.type}")
@@ -81,15 +85,15 @@ def display_task_details(task: Task, quest_id: str = "Unknown Quest") -> None:
 
     print(f"Optional Task: {'Yes' if task.optional_task else 'No'}")
 
-    print("\n" + "="*50)
+    print(Fore.CYAN + "\n" + "="*50)
 
 
 def display_reward_details(reward: Reward, quest_id: str = "Unknown Quest") -> None:
     """Display comprehensive details of a reward."""
-    print("\n" + "="*50)
-    print(f"REWARD DETAILS: {reward.type.upper()}")
+    print("\n" + Fore.CYAN + "="*50)
+    print(Fore.YELLOW + Style.BRIGHT + f"REWARD DETAILS: {reward.type.upper()}")
     print(f"Quest: {quest_id}")
-    print("="*50)
+    print(Fore.CYAN + "="*50)
 
     print(f"Reward ID: {reward.id}")
     print(f"Type: {reward.type}")
@@ -108,4 +112,4 @@ def display_reward_details(reward: Reward, quest_id: str = "Unknown Quest") -> N
     if hasattr(reward, 'count') and reward.count:
         print(f"Count: {reward.count}")
 
-    print("\n" + "="*50)
+    print(Fore.CYAN + "\n" + "="*50)

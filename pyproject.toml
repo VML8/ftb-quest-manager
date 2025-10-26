@@ -25,7 +25,8 @@ classifiers = [
 requires-python = ">=3.8"
 dependencies = [
     "pydantic>=2.0.0",
-    "ftb_snbt_lib>=1.0.0"
+    "ftb_snbt_lib>=1.0.0",
+    "colorama>=0.4.6,<1.0.0"
 ]
 
 [project.scripts]
