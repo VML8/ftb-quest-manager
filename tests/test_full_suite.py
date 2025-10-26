@@ -19,7 +19,7 @@ import pytest
 from pydantic import ValidationError
 
 # --- FIX: Import List for type hinting ---
-from typing import List, Dict 
+from typing import List, Dict, Union
 # --- END FIX ---
 
 # Ensure the module is discoverable
@@ -42,7 +42,7 @@ except ImportError:
 import module
 from module.quest_models import Item, Task, Reward, Quest, Chapter
 from module.quest_edit import (
-    edit_chapter_title, edit_chapter_subtitle, edit_chapter_icon, 
+    edit_chapter_title, edit_chapter_subtitle, edit_chapter_icon, edit_chapter_tags,
     edit_quest_position, add_quest_to_chapter, remove_quest_from_chapter,
     edit_quest_in_chapter, add_task_to_quest, remove_task_from_quest, 
     edit_task_in_quest, add_reward_to_quest, remove_reward_from_quest,
@@ -81,16 +81,29 @@ class TestDataFixtures:
     """
     @pytest.fixture
     def item(self):
-        return Item(id="minecraft:gold", count=10)
+        # Item with components for advanced testing
+        return Item(
+            id="minecraft:gold", 
+            count=10, 
+            components={"display": {"Name": "Gold Ingot"}, "nbt": "..."}
+        )
 
     @pytest.fixture
     def task(self, item):
-        return Task(id="t_gold_collect", type="item", item=item, count=10)
+        # Task with advancement and optional fields for detail testing
+        return Task(
+            id="t_gold_collect", 
+            type="item", 
+            item=item, 
+            count=10,
+            advancement="adv_check",
+            optional_task=True
+        )
 
     @pytest.fixture
     def reward(self, item):
         # NOTE: Using a specific reward to match expected output structure
-        return Reward(id="r_xp_reward", type="xp", count=500)
+        return Reward(id="r_xp_reward", type="xp", count=500, advancement="adv_reward")
 
     @pytest.fixture
     def quest(self, task, reward):
@@ -139,6 +152,33 @@ class TestSetup(TestDataFixtures):
         assert quest.id == "q_test_edit"
         assert len(quest.tasks) == 1
         assert "dep_quest_id" in quest.dependencies
+        
+    # --- NEW MODEL TESTS ---
+
+    def test_item_components_handling(self, item):
+        """Verify complex dictionary components are stored."""
+        assert 'nbt' in item.components
+        assert item.components['display']['Name'] == "Gold Ingot"
+
+    def test_count_union_type_int(self):
+        """Verify QuestComponent accepts integer count."""
+        task = Task(id="t_int", type="item", count=5)
+        assert isinstance(task.count, int)
+        assert task.count == 5
+
+    def test_count_union_type_string(self):
+        """Verify QuestComponent accepts string count (like '8L' in SNBT)."""
+        task = Task(id="t_str", type="item", count="8L")
+        assert isinstance(task.count, str)
+        assert task.count == "8L"
+
+    def test_optional_quest_fields_default_false(self):
+        """Verify boolean optional fields default to False."""
+        quest = Quest(id="q_defaults", x=0.0, y=0.0)
+        assert quest.hide_details_until_startable is False
+        assert quest.hide_lock_icon is False
+
+    # --- END NEW MODEL TESTS ---
 
 
 # --- Test Component: Loader/File I/O (Mocked Environment Discovery) ---
@@ -287,7 +327,7 @@ class TestLoaderWithStaticData:
         print(f"--- Successfully loaded and parsed {len(parsed_chapters)} chapters. ---")
 
 
-# --- Test Component: Programmatic API / Editing (No changes needed) ---
+# --- Test Component: Programmatic API / Editing ---
 
 class TestEditFunctions(TestDataFixtures):
     """Verifies all methods in module/quest_edit.py."""
@@ -303,6 +343,55 @@ class TestEditFunctions(TestDataFixtures):
         new_subtitle = "New Sub"
         updated_chapter = edit_chapter_subtitle(chapter, new_subtitle)
         assert updated_chapter.subtitle == new_subtitle
+        
+    # --- NEW EDIT TESTS ---
+
+    def test_edit_chapter_icon(self, chapter, item):
+        """Test updating a chapter's icon (which is an Item model)."""
+        new_icon = Item(id="minecraft:stick")
+        updated_chapter = edit_chapter_icon(chapter, new_icon)
+        assert updated_chapter.icon == new_icon
+        assert chapter.icon is None # Ensure original is immutable
+
+    def test_edit_chapter_tags(self, chapter):
+        """Test updating a chapter's tags list."""
+        # FIX: Create a deep copy of the fixture object to ensure absolute isolation 
+        # from any potential fixture leaks or shared references.
+        original_chapter = chapter.model_copy(deep=True)
+        
+        new_tags = ["utility", "starter"]
+        updated_chapter = edit_chapter_tags(original_chapter, new_tags)
+        
+        assert updated_chapter.tags == new_tags
+        
+        # Assert the original object (original_chapter) is unchanged
+        assert original_chapter.tags == [] 
+        # Assert the new list object is not the same as the original list object
+        assert updated_chapter.tags is not original_chapter.tags
+
+    def test_create_task_advancement(self):
+        """Test creating a Task of type 'advancement'."""
+        task = create_task("t_adv", "advancement", advancement="minecraft:adv/root", optional_task=False)
+        assert task.type == "advancement"
+        assert task.advancement == "minecraft:adv/root"
+        assert task.optional_task is False
+        assert task.item is None
+
+    def test_create_reward_xp(self):
+        """Test creating a Reward of type 'xp'."""
+        reward = create_reward("r_xp_create", "xp", count=1000)
+        assert reward.type == "xp"
+        assert reward.count == 1000
+        assert reward.item is None
+        
+    def test_create_task_item(self, item):
+        """Test creating a Task of type 'item' with an Item model."""
+        task = create_task("t_item_create", "item", item=item, count=20)
+        assert task.type == "item"
+        assert task.count == 20
+        assert task.item.id == "minecraft:gold"
+
+    # --- END NEW EDIT TESTS ---
 
     def test_add_quest_to_chapter(self, chapter):
         new_quest = create_quest("q_new", 10.0, 10.0)
@@ -335,18 +424,55 @@ class TestEditFunctions(TestDataFixtures):
         updated_quest = add_task_to_quest(quest, new_task)
         assert len(updated_quest.tasks) == 2
         assert updated_quest.tasks[-1].id == "t_new"
+        assert quest.tasks is not updated_quest.tasks # Ensure lists are copied
 
     def test_remove_reward_from_quest(self, quest):
         reward_to_remove = quest.rewards[0].id
         updated_quest = remove_reward_from_quest(quest, reward_to_remove)
         assert len(updated_quest.rewards) == 0
+        assert len(quest.rewards) == 1 # Check immutability
 
     def test_edit_task_in_quest(self, quest, task):
         # Change the count of the existing task
         modified_task = task.model_copy(update={'count': 999})
         updated_quest = edit_task_in_quest(quest, task.id, modified_task)
         assert updated_quest.tasks[0].count == 999
+        assert quest.tasks[0].count != 999 # Check immutability
 
+    def test_edit_reward_in_quest(self, quest, reward):
+        # Change the count of the existing reward
+        modified_reward = reward.model_copy(update={'count': 999})
+        updated_quest = edit_reward_in_quest(quest, reward.id, modified_reward)
+        assert updated_quest.rewards[0].count == 999
+        assert quest.rewards[0].count != 999 # Check immutability
+    
+    # --- NEW: Final Edit Function Coverage ---
+
+    def test_remove_task_from_quest(self, quest, task):
+        """Tests removal of a task by its ID."""
+        # Note: quest fixture starts with 1 task
+        task_to_remove_id = task.id
+        updated_quest = remove_task_from_quest(quest, task_to_remove_id)
+        assert len(updated_quest.tasks) == 0
+        assert len(quest.tasks) == 1 # Check immutability
+
+    def test_add_reward_to_quest(self, quest):
+        """Tests adding a new reward to the quest."""
+        new_reward = create_reward("r_new", "item", count=5, item=Item(id="minecraft:stick"))
+        updated_quest = add_reward_to_quest(quest, new_reward)
+        assert len(updated_quest.rewards) == 2
+        assert updated_quest.rewards[-1].id == "r_new"
+        assert len(quest.rewards) == 1 # Check immutability
+
+    def test_edit_reward_in_quest(self, quest, reward):
+        """Tests replacing an existing reward with an updated one."""
+        # The reward fixture is 'r_xp_reward' (type='xp', count=500)
+        modified_reward = reward.model_copy(update={'count': 1000})
+        updated_quest = edit_reward_in_quest(quest, reward.id, modified_reward)
+        assert updated_quest.rewards[0].count == 1000
+        assert quest.rewards[0].count == 500 # Check immutability
+
+    # --- END NEW: Final Edit Function Coverage ---
 
 # --- Test Component: Navigation / Display ---
 
@@ -385,6 +511,38 @@ class TestNavigation(TestDataFixtures):
         # The reward fixture is 'r_xp_reward' (type='xp', count=500). Item info is 'Unknown'
         assert "Type: xp | Unknown" in out 
         assert "Count: 500" in out
+        
+    # --- NEW NAVIGATION DETAIL TESTS ---
+
+    def test_display_task_details_output(self, quest, task, capfd):
+        """
+        Verify comprehensive task details, including optional/advancement fields.
+        FIX: Changing assertion from uppercase 'ITEM' to lowercase 'item' to match application output.
+        """
+        module.quest_navigator.display_task_details(task, quest.id)
+        out, err = capfd.readouterr()
+        
+        assert f"Quest: {quest.id}" in out
+        assert "Type: item" in out # FIXED: Expected lowercase 'item'
+        assert "Item: minecraft:gold" in out
+        assert "Item Count: 10" in out
+        assert "Advancement: adv_check" in out
+        assert "Optional Task: Yes" in out
+        
+    def test_display_reward_details_output(self, quest, reward, capfd):
+        """
+        Verify comprehensive reward details, including advancement fields.
+        FIX: Changing assertion from uppercase 'XP' to lowercase 'xp' to match application output.
+        """
+        module.quest_navigator.display_reward_details(reward, quest.id)
+        out, err = capfd.readouterr()
+        
+        assert f"Quest: {quest.id}" in out
+        assert "Type: xp" in out # FIXED: Expected lowercase 'xp'
+        assert "Count: 500" in out
+        assert "Advancement: adv_reward" in out
+
+    # --- END NEW NAVIGATION DETAIL TESTS ---
 
 
 # --- Test Application Flow: Interactive CLI ---
