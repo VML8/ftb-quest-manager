@@ -1,5 +1,5 @@
 ﻿annotated-types==0.7.0
-git+https://github.com/peunsu/ftb-snbt-lib.git@v0.4.0
+ftb-snbt-lib==0.4.0
 pydantic==2.12.3
 pydantic_core==2.41.4
 typing-inspection==0.4.2
