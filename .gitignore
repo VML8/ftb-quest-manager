@@ -1,3 +1,7 @@
+# Editor
+.vscode
+.windsurf
+
 # Python
 module/__pycache__
 *.py[cod]
@@ -16,3 +20,6 @@ env/
 *.dist-info/
 
 Thumbs.db
+
+# static
+tests/static_paths_config.py

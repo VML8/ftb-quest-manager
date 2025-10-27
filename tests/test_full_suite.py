@@ -5,7 +5,7 @@ This suite is broken down by functional component and application flow
 (Programmatic API, Interactive CLI, Argparse CLI) to ensure full coverage 
 and isolation.
 
-Run with: python -m pytest tests/test_full_suite.py
+Run with: python -m pytest tests/test_full_suite.py > .venv\log\test_report.txt 2>&1
 """
 import sys
 import os
@@ -40,8 +40,8 @@ except ImportError:
 
 # Import the main package and components
 import module
-from module.quest_models import Item, Task, Reward, Quest, Chapter
-from module.quest_edit import (
+from module.model.quest_models import Item, Task, Reward, Quest, Chapter
+from module.controller.quest_edit import (
     edit_chapter_title, edit_chapter_subtitle, edit_chapter_icon, edit_chapter_tags,
     edit_quest_position, add_quest_to_chapter, remove_quest_from_chapter,
     edit_quest_in_chapter, add_task_to_quest, remove_task_from_quest, 
@@ -144,7 +144,7 @@ class TestSetup(TestDataFixtures):
 
     def test_config_paths(self):
         """Verify configuration constants are correct."""
-        from module.quest_config import FTBQ_DIR
+        from module.controller.quest_config import FTBQ_DIR
         assert FTBQ_DIR == "../config/ftbquests/"
 
     def test_model_instantiation(self, quest):
@@ -183,13 +183,13 @@ class TestSetup(TestDataFixtures):
 
 # --- Test Component: Loader/File I/O (Mocked Environment Discovery) ---
 
-@patch('module.ftb_loader.fslib')
+@patch('module.controller.ftb_loader.fslib')
 class TestLoader:
     """Tests related to directory finding, parsing errors, and load logic using mocks."""
 
     def test_is_valid_chapters_dir_checks(self, mock_fslib, tmp_path):
         """Test the directory validation logic."""
-        from module.ftb_loader import is_valid_chapters_dir
+        from module.controller.ftb_loader import is_valid_chapters_dir
         
         # 1. Setup a valid directory
         valid_dir = tmp_path / "chapters"
@@ -205,14 +205,14 @@ class TestLoader:
         assert is_valid_chapters_dir(str(invalid_dir)) is False
         assert is_valid_chapters_dir(str(tmp_path / "nonexistent")) is False
 
-    @patch('module.ftb_loader.os.path')
-    @patch('module.ftb_loader.os.getcwd', return_value='/mock/modpack')
-    @patch('module.ftb_loader.is_valid_chapters_dir', return_value=False)
+    @patch('module.controller.ftb_loader.os.path')
+    @patch('module.controller.ftb_loader.os.getcwd', return_value='/mock/modpack')
+    @patch('module.controller.ftb_loader.is_valid_chapters_dir', return_value=False)
     def test_find_chapters_directory_fallback(self, mock_valid, mock_cwd, mock_path, monkeypatch):
         """
         Test manual fallback when auto-discovery fails. 
         """
-        from module.ftb_loader import find_chapters_directory
+        from module.controller.ftb_loader import find_chapters_directory
         
         # Mocking sys.argv[0] to avoid dependence on script location
         monkeypatch.setattr(sys, 'argv', ['/path/to/script.py'])
@@ -229,10 +229,10 @@ class TestLoader:
         
         assert result == '/custom/path/to/chapters'
 
-    @patch('module.ftb_loader.open', new_callable=lambda: lambda *args, **kwargs: io.StringIO('mock SNBT data'))
+    @patch('module.controller.ftb_loader.open', new_callable=lambda: lambda *args, **kwargs: io.StringIO('mock SNBT data'))
     def test_load_chapter_data_success_mocked_fs(self, mock_open, mock_fslib, monkeypatch):
         """Test successful loading of SNBT files using mocked FS."""
-        from module.ftb_loader import load_chapter_data
+        from module.controller.ftb_loader import load_chapter_data
         
         # Mock OS calls to simulate a directory with two SNBT files
         monkeypatch.setattr(os, 'listdir', lambda x: ['c1.snbt', 'c2.snbt', 'other.txt'])
@@ -256,7 +256,7 @@ class TestLoader:
         CRITICAL FIX: Patch builtins.print to prevent the Pydantic/Rust core panic
         when the mocked ValidationError is printed inside ftb_loader.py.
         """
-        from module.ftb_loader import parse_chapters
+        from module.controller.ftb_loader import parse_chapters
         
         raw_data = {
             "valid.snbt": MOCK_SNBT_CHAPTER_DICT,
@@ -304,7 +304,7 @@ class TestLoaderWithStaticData:
     # --- END FIX ---
     def test_load_and_parse_static_data(self):
         """Verify that real files are loaded and correctly parsed into Pydantic models."""
-        from module.ftb_loader import load_chapter_data, parse_chapters
+        from module.controller.ftb_loader import load_chapter_data, parse_chapters
         
         # Use the string representation for load_chapter_data, as required by the application
         static_path_str = str(self.STATIC_PATH_OBJ)
@@ -481,7 +481,7 @@ class TestNavigation(TestDataFixtures):
 
     def test_display_chapters_output(self, parsed_chapters, capfd):
         """Verify chapter display includes keys and counts."""
-        module.quest_navigator.display_chapters(parsed_chapters)
+        module.display_chapters(parsed_chapters)
         out, err = capfd.readouterr()
         assert "CHAPTERS" in out
         assert "test_chapter_key".upper() in out
@@ -492,7 +492,7 @@ class TestNavigation(TestDataFixtures):
         Verify quest display includes quest IDs and dependency count.
         FIX: Correcting assertion string to expect the truncated quest ID.
         """
-        module.quest_navigator.display_quests(chapter)
+        module.display_quests(chapter)
         out, err = capfd.readouterr()
         assert "CHAPTER: EDIT.SNBT" in out
         # FIX: Asserting the correct 8-character truncation
@@ -503,7 +503,7 @@ class TestNavigation(TestDataFixtures):
         Verify detailed quest view includes coordinates, tasks, and rewards.
         FIX: Correcting assertion string for the XP reward type.
         """
-        module.quest_navigator.display_quest_details(quest)
+        module.display_quest_details(quest)
         out, err = capfd.readouterr()
         assert f"QUEST DETAILS: {quest.id}" in out
         assert "Coords: (5.0, 5.0)" in out
@@ -519,7 +519,7 @@ class TestNavigation(TestDataFixtures):
         Verify comprehensive task details, including optional/advancement fields.
         FIX: Changing assertion from uppercase 'ITEM' to lowercase 'item' to match application output.
         """
-        module.quest_navigator.display_task_details(task, quest.id)
+        module.display_task_details(task, quest.id)
         out, err = capfd.readouterr()
         
         assert f"Quest: {quest.id}" in out
@@ -534,7 +534,7 @@ class TestNavigation(TestDataFixtures):
         Verify comprehensive reward details, including advancement fields.
         FIX: Changing assertion from uppercase 'XP' to lowercase 'xp' to match application output.
         """
-        module.quest_navigator.display_reward_details(reward, quest.id)
+        module.display_reward_details(reward, quest.id)
         out, err = capfd.readouterr()
         
         assert f"Quest: {quest.id}" in out

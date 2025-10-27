@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 # Assuming your package structure means quest_models is available via relative import
 # NOTE: This line must be updated if Chapter is not in the same package root.
-from .quest_models import Chapter 
+from ..model.quest_models import Chapter 
 
 # Assuming ftb_snbt_lib is installed or available in the environment
 # If fslib is a global module, this import is correct.

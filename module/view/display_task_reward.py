@@ -2,7 +2,7 @@ from colorama import init, Fore, Back, Style
 
 from typing import Dict, Union
 
-from .quest_models import Chapter, Quest, Task, Reward
+from ..model.quest_models import Task, Reward
 
 init(autoreset=True)
 
