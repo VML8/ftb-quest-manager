@@ -4,7 +4,7 @@ from typing import Dict, Optional, List
 
 # Import all necessary components from the module
 from module import (
-    display_chapters, display_quests, display_quest_details, 
+    display_chapters, display_quests, display_quest_details, display_task_details, display_reward_details,
     load_chapter_data, parse_chapters, find_chapters_directory,
     Chapter, Quest, Task, Reward, Item,
     edit_chapter_title, edit_quest_in_chapter, edit_quest_position
@@ -60,8 +60,35 @@ def interactive_cli_main(parsed_chapters: Dict[str, Chapter]):
                     current_chapter = None
                 case [index] if index.isdigit() and 0 <= int(index) < len(current_chapter.quests):
                     selected_quest = current_chapter.quests[int(index)]
-                    # Simple display
-                    display_quest_details(selected_quest)
+                    # Enter quest details sub-menu (stay here until 'back' or 'exit')
+                    while True:
+                        display_quest_details(selected_quest)
+                        sub_input = input("Select task/reward index (e.g., 'task 0'), 'edit', 'back', or 'exit': ").strip().lower()
+                        match sub_input.split():
+                            case ['exit']:
+                                return
+                            case ['back']:
+                                break
+                            case ['task', t_index] if t_index.isdigit() and 0 <= int(t_index) < len(selected_quest.tasks):
+                                display_task_details(selected_quest.tasks[int(t_index)], selected_quest.id)
+                            case ['reward', r_index] if r_index.isdigit() and 0 <= int(r_index) < len(selected_quest.rewards):
+                                display_reward_details(selected_quest.rewards[int(r_index)], selected_quest.id)
+                            case ['edit']:
+                                print("Edit quest: Type 'position x y' or 'back'")
+                                edit_input = input().strip()
+                                match edit_input.split():
+                                    case ['position', x, y] if x.replace('.', '').replace('-', '').isdigit() and y.replace('.', '').replace('-', '').isdigit():
+                                        # update quest position in both the local object and the chapter
+                                        updated_q = edit_quest_position(selected_quest, float(x), float(y))
+                                        current_chapter = edit_quest_in_chapter(current_chapter, selected_quest.id, updated_q)
+                                        selected_quest = updated_q
+                                        print("Quest position updated.")
+                                    case ['back']:
+                                        pass
+                                    case _:
+                                        print("Invalid edit command.")
+                            case _:
+                                print("Invalid. Use 'task <num>', 'reward <num>', 'edit', 'back', or 'exit'.")
                 case ['edit']:
                     # Simplified chapter edit example
                     print("Edit chapter: Type 'title <new_title>' or 'back'")
