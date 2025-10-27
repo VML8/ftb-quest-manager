@@ -25,6 +25,7 @@ class Reward(QuestComponent):
 
 class Quest(BaseModel):
     id: str
+    title: Optional[str] = None
     x: float
     y: float
     dependencies: List[str] = Field(default_factory=list)

@@ -15,7 +15,8 @@ from .view.display_task_reward import (
 from .controller.ftb_loader import (
                         find_chapters_directory, 
                         load_chapter_data, 
-                        parse_chapters
+                        parse_chapters,
+                        load_language_data
                         )
 
 # Data editing functions
@@ -66,6 +67,7 @@ __all__ = [
     "find_chapters_directory",
     "load_chapter_data",
     "parse_chapters",
+    "load_language_data",
 
     # Model classes
     "Chapter",

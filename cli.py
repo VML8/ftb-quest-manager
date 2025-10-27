@@ -1,12 +1,12 @@
 import argparse
 import sys
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Tuple, Union
 
 # Import all necessary components from the module
 from module import (
     display_chapters, display_quests, display_quest_details, display_task_details, display_reward_details,
-    load_chapter_data, parse_chapters, find_chapters_directory,
-    Chapter, Quest, Task, Reward, Item,
+    load_chapter_data, load_language_data, parse_chapters, find_chapters_directory,
+    Chapter, Quest,
     edit_chapter_title, edit_quest_in_chapter, edit_quest_position
 )
 
@@ -15,100 +15,184 @@ from module import (
 def load_data_for_cli() -> Optional[Dict[str, Chapter]]:
     """Loads and parses data once for any CLI mode."""
     try:
+        # 1. Discover chapters directory
         chapters_dir = find_chapters_directory()
+        
+        # 2. Load chapter data
         raw_chapter_data = load_chapter_data(chapters_dir)
-        return parse_chapters(raw_chapter_data)
+        
+        # --- FIX: Load language data using the discovered chapters directory ---
+        lang_data = load_language_data(chapters_dir)
+        # ----------------------------------------------------------------------
+        
+        # 3. Parse and return
+        return parse_chapters(raw_chapter_data, lang_data)
+        
     except Exception as e:
         print(f"Error loading quest data: {e}")
         return None
 
+# --- Interactive CLI Helper Functions ---
 
-# --- 2. Interactive CLI Main Function ---
+def _handle_chapter_level_input(
+    parsed_chapters: Dict[str, Chapter], 
+    chapter_keys: List[str], 
+    user_input: str
+) -> Union[Chapter, str, None]:
+    """
+    Handles input when at the main Chapter selection level.
+    Returns: Chapter object, 'EXIT' sentinel, or None (invalid input).
+    """
+    match user_input.split():
+        case ['exit']:
+            return 'EXIT'
+        case [index] if index.isdigit() and 0 <= int(index) < len(chapter_keys):
+            return parsed_chapters[chapter_keys[int(index)]]
+        case [key] if key in parsed_chapters:
+            return parsed_chapters[key]
+        case _:
+            print("Invalid chapter selection.")
+            return None
+
+def _handle_chapter_edit(current_chapter: Chapter) -> Chapter:
+    """Handles the 'edit' command at the Chapter level (currently title only)."""
+    print("Edit chapter: Type 'title <new_title>' or 'back'")
+    edit_input = input().strip()
+    match edit_input.split():
+        case ['title', *title]:
+            new_title = ' '.join(title)
+            updated_chapter = edit_chapter_title(current_chapter, new_title)
+            print(f"Chapter title updated to '{new_title}'.")
+            return updated_chapter
+        case ['back']:
+            return current_chapter
+        case _:
+            print("Invalid edit command.")
+            return current_chapter
+
+def _handle_quest_detail_edit(selected_quest: Quest, current_chapter: Chapter) -> Tuple[Quest, Chapter]:
+    """Handles the 'edit' command at the Quest Detail level (e.g., position)."""
+    print("Edit quest: Type 'position x y' or 'back'")
+    edit_input = input().strip()
+    match edit_input.split():
+        case ['position', x, y] if x.replace('.', '').replace('-', '').isdigit() and y.replace('.', '').replace('-', '').isdigit():
+            # 1. Update quest position (creates new Quest object due to Pydantic immutability)
+            updated_q = edit_quest_position(selected_quest, float(x), float(y))
+            # 2. Update the quest in the chapter's list (creates new Chapter object)
+            updated_chapter = edit_quest_in_chapter(current_chapter, selected_quest.id, updated_q)
+            print("Quest position updated.")
+            return updated_q, updated_chapter
+        case ['back']:
+            return selected_quest, current_chapter
+        case _:
+            print("Invalid edit command.")
+            return selected_quest, current_chapter
+
+def _handle_quest_detail_level_loop(selected_quest: Quest, current_chapter: Chapter) -> Tuple[str, Optional[Chapter], Optional[Quest]]:
+    """
+    Manages the nested loop for viewing and editing a specific Quest's details.
+    Returns: (action, updated_chapter, updated_quest)
+    Action can be 'break' (to go back to quest list), 'exit', or 'continue' (to repeat loop).
+    """
+    
+    # Loop while viewing details of the selected quest
+    while True:
+        display_quest_details(selected_quest)
+        sub_input = input("Select task/reward index (e.g., 'task 0'), 'edit', 'back', or 'exit': ").strip().lower()
+        
+        match sub_input.split():
+            case ['exit']:
+                return 'exit', None, None
+            case ['back']:
+                return 'break', current_chapter, None
+            case ['task', t_index] if t_index.isdigit() and 0 <= int(t_index) < len(selected_quest.tasks):
+                display_task_details(selected_quest.tasks[int(t_index)], selected_quest.id)
+            case ['reward', r_index] if r_index.isdigit() and 0 <= int(r_index) < len(selected_quest.rewards):
+                display_reward_details(selected_quest.rewards[int(r_index)], selected_quest.id)
+            case ['edit']:
+                # Edit returns the new quest and the new chapter object
+                selected_quest, current_chapter = _handle_quest_detail_edit(selected_quest, current_chapter)
+                # Continue in this loop with the updated objects
+            case _:
+                print("Invalid. Use 'task <num>', 'reward <num>', 'edit', 'back', or 'exit'.")
+    
+    return 'continue', current_chapter, selected_quest # Fall-Through Safegaurd
+
+def _handle_quest_level_input(current_chapter: Chapter, user_input: str) -> Tuple[str, Chapter]:
+    """
+    Handles input when at the Quest selection level for a specific chapter.
+    Returns: (action, updated_chapter)
+    Action can be 'exit', 'back', or 'continue' (to repeat loop with potentially updated chapter).
+    """
+    match user_input.split():
+        case ['exit']:
+            return 'exit', current_chapter
+        case ['back']:
+            return 'back', current_chapter
+        case ['edit']:
+            updated_chapter = _handle_chapter_edit(current_chapter)
+            return 'continue', updated_chapter
+        case [index] if index.isdigit() and 0 <= int(index) < len(current_chapter.quests):
+            selected_quest = current_chapter.quests[int(index)]
+            
+            # Enter Quest Details loop
+            action, updated_chapter, _ = _handle_quest_detail_level_loop(selected_quest, current_chapter)
+            
+            if action == 'exit':
+                return 'exit', current_chapter # Propagate exit
+            
+            # Action 'break' (go back to quest list) or 'continue' (edit finished).
+            # We return to the main loop with the potentially updated chapter.
+            return 'continue', updated_chapter if updated_chapter else current_chapter
+        case _:
+            print("Invalid. Try 'back', 'edit', or a number.")
+            return 'continue', current_chapter
+
+# --- 2. Interactive CLI Main Function (Refactored) ---
 
 def interactive_cli_main(parsed_chapters: Dict[str, Chapter]):
     """
     The full-featured, stateful, and interactive command-line interface 
-    for deep navigation and editing. (Logic adapted from module/__main__.py)
+    for deep navigation and editing, using helper functions for readability.
     """
+    # State variables
     current_chapter: Optional[Chapter] = None
     chapter_keys = list(parsed_chapters.keys())
 
-    print("FTB Quests CLI (Interactive Mode). Type 'help' for commands.")
+    print("FTB Quests CLI (Interactive Mode).")
 
     while True:
         if current_chapter is None:
             # Chapter selection level
             display_chapters(parsed_chapters)
             user_input = input("Select chapter index, key, or 'exit': ").strip().lower()
-            match user_input.split():
-                case ['exit']:
-                    break
-                case [index] if index.isdigit() and 0 <= int(index) < len(chapter_keys):
-                    current_chapter = parsed_chapters[chapter_keys[int(index)]]
-                case [key] if key in parsed_chapters:
-                    current_chapter = parsed_chapters[key]
-                case _:
-                    print("Invalid chapter selection.")
+
+            result = _handle_chapter_level_input(parsed_chapters, chapter_keys, user_input)
+            
+            if result == 'EXIT':
+                break
+            elif isinstance(result, Chapter):
+                current_chapter = result
+                
         else:
             # Quest selection level
             display_quests(current_chapter)
             user_input = input("Select quest index, 'back', 'edit', or 'exit': ").strip().lower()
-            match user_input.split():
-                case ['exit']:
-                    break
-                case ['back']:
-                    current_chapter = None
-                case [index] if index.isdigit() and 0 <= int(index) < len(current_chapter.quests):
-                    selected_quest = current_chapter.quests[int(index)]
-                    # Enter quest details sub-menu (stay here until 'back' or 'exit')
-                    while True:
-                        display_quest_details(selected_quest)
-                        sub_input = input("Select task/reward index (e.g., 'task 0'), 'edit', 'back', or 'exit': ").strip().lower()
-                        match sub_input.split():
-                            case ['exit']:
-                                return
-                            case ['back']:
-                                break
-                            case ['task', t_index] if t_index.isdigit() and 0 <= int(t_index) < len(selected_quest.tasks):
-                                display_task_details(selected_quest.tasks[int(t_index)], selected_quest.id)
-                            case ['reward', r_index] if r_index.isdigit() and 0 <= int(r_index) < len(selected_quest.rewards):
-                                display_reward_details(selected_quest.rewards[int(r_index)], selected_quest.id)
-                            case ['edit']:
-                                print("Edit quest: Type 'position x y' or 'back'")
-                                edit_input = input().strip()
-                                match edit_input.split():
-                                    case ['position', x, y] if x.replace('.', '').replace('-', '').isdigit() and y.replace('.', '').replace('-', '').isdigit():
-                                        # update quest position in both the local object and the chapter
-                                        updated_q = edit_quest_position(selected_quest, float(x), float(y))
-                                        current_chapter = edit_quest_in_chapter(current_chapter, selected_quest.id, updated_q)
-                                        selected_quest = updated_q
-                                        print("Quest position updated.")
-                                    case ['back']:
-                                        pass
-                                    case _:
-                                        print("Invalid edit command.")
-                            case _:
-                                print("Invalid. Use 'task <num>', 'reward <num>', 'edit', 'back', or 'exit'.")
-                case ['edit']:
-                    # Simplified chapter edit example
-                    print("Edit chapter: Type 'title <new_title>' or 'back'")
-                    edit_input = input().strip()
-                    match edit_input.split():
-                        case ['title', *title]:
-                            new_title = ' '.join(title)
-                            current_chapter = edit_chapter_title(current_chapter, new_title)
-                            print(f"Chapter title updated to '{new_title}'.")
-                        case ['back']:
-                            pass
-                        case _:
-                            print("Invalid edit command.")
-                case _:
-                    print("Invalid. Try 'back', 'edit', or a number.")
+
+            action, updated_chapter = _handle_quest_level_input(current_chapter, user_input)
+
+            if action == 'exit':
+                break
+            elif action == 'back':
+                current_chapter = None
+            elif action == 'continue':
+                # Update the chapter state after selection or an edit
+                current_chapter = updated_chapter
+
 
     print("\nExiting FTB Quests CLI. Goodbye!")
 
-
-# --- 3. Rapid Argparse Tool Main Function ---
+# --- 3. Rapid Argparse Tool Main Function (Unchanged) ---
 
 def argparse_cli_main(args: argparse.Namespace, chapters: Dict[str, Chapter]):
     """

@@ -6,6 +6,11 @@ from ..model.quest_models import Task, Reward
 
 init(autoreset=True)
 
+# Styling Constants
+TITLE_STYLE = Fore.YELLOW + Style.BRIGHT
+DEPS_STYLE = Fore.MAGENTA
+ID_STYLE = Fore.CYAN
+INDEX_STYLE = Fore.YELLOW
 
 def display_task_reward_details(obj: Union[Task, Reward], quest_id: str = "Unknown Quest", obj_type: str = "AUTO") -> None:
     """Display comprehensive details of a task or reward.
