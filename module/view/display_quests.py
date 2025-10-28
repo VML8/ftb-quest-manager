@@ -56,8 +56,8 @@ def display_quest_details(quest: Quest) -> None:
     # Details
     print(f"Coords: ({quest.x}, {quest.y})")
     
-    # Apply DEPS_STYLE directly to the content, outside the f-string variable itself.
-    deps_info = DEPS_STYLE + (quest.dependencies if quest.dependencies else 'None')
+    deps_content = ", ".join(quest.dependencies) if quest.dependencies else 'None'
+    deps_info = DEPS_STYLE + deps_content
     print(f"Dependencies: {deps_info}")
     
     print(f"Hidden Until Startable: {quest.hide_details_until_startable}")
