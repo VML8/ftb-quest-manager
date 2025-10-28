@@ -6,21 +6,21 @@ quest data from SNBT files.
 """
 
 # Data navigation and viewing functions
-from .quest_navigator import (
-                            display_chapters, 
-                            display_quests, 
-                            display_quest_details, 
-                            display_task_details, 
-                            display_reward_details
-                            )
-from .ftb_loader import (
+from .view.display_chapters import display_chapters
+from .view.display_quests import display_quests, display_quest_details
+from .view.display_task_reward import (
+    display_task_reward_details as display_task_details,
+    display_task_reward_details as display_reward_details
+)
+from .controller.ftb_loader import (
                         find_chapters_directory, 
                         load_chapter_data, 
-                        parse_chapters
+                        parse_chapters,
+                        load_language_data
                         )
 
 # Data editing functions
-from .quest_edit import (
+from .controller.quest_edit import (
                          #  Edit chapter functions
                          edit_chapter_title, 
                          edit_chapter_subtitle, 
@@ -51,7 +51,7 @@ from .quest_edit import (
                          )
 
 # Model classes
-from .quest_models import Chapter, Quest, Task, Reward, Item
+from .model.quest_models import Chapter, Quest, Task, Reward, Item
 
 __version__ = "1.0.0"
 __all__ = [
@@ -59,6 +59,7 @@ __all__ = [
     "display_chapters",
     "display_quests",
     "display_quest_details",
+    "display_task_reward_details",
     "display_task_details",
     "display_reward_details",
 
@@ -66,6 +67,7 @@ __all__ = [
     "find_chapters_directory",
     "load_chapter_data",
     "parse_chapters",
+    "load_language_data",
 
     # Model classes
     "Chapter",

@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from .quest_models import Chapter, Quest, Task, Reward, Item, QuestComponent
+from ..model.quest_models import Chapter, Quest, Task, Reward, Item, QuestComponent
 
 
 def edit_chapter_title(chapter: Chapter, new_title: str) -> Chapter:

@@ -5,11 +5,14 @@ from pydantic import ValidationError
 
 # Assuming your package structure means quest_models is available via relative import
 # NOTE: This line must be updated if Chapter is not in the same package root.
-from .quest_models import Chapter 
+from ..model.quest_models import Chapter 
 
 # Assuming ftb_snbt_lib is installed or available in the environment
 # If fslib is a global module, this import is correct.
 import ftb_snbt_lib as fslib 
+
+# Import lang file
+from .quest_config import LANG_DIR
 
 
 # --- Path Discovery Logic (Integrated from previous steps) ---
@@ -72,6 +75,33 @@ def find_chapters_directory() -> str:
             print(f"Directory invalid or not found. Path checked: {user_path}")
             print("Ensure the path leads directly to the folder containing .snbt files.")
 
+# --- Load and Map Language File ---
+def load_language_data(chapters_dir_path: str) -> Dict[str, str]:
+    """
+    Load and parse the language file (en_us.snbt) to get localized quest/task names.
+    Returns a dictionary mapping localization keys (e.g., 'quest.ID.title') to strings.
+    """
+    # The chapters directory is: .../config/ftbquests/quests/chapters
+    # The lang file is at:      .../config/ftbquests/quests/lang/en_us.snbt
+    # Path relative to chapters_dir_path is: ../lang/en_us.snbt
+    
+    lang_file_path = os.path.join(chapters_dir_path, os.pardir, "lang", "en_us.snbt")
+    lang_file_path = os.path.normpath(lang_file_path)
+
+    if not os.path.exists(lang_file_path):
+        print(f"Warning: Language file not found at expected path: {lang_file_path}. Quest titles may be missing.")
+        return {}
+    
+    raw_lang_data = {}
+    try:
+        with open(lang_file_path, "r", encoding="utf-8") as f:
+            raw_lang_data = fslib.load(f)
+    except Exception as e:
+        print(f"Error loading language file: {e}")
+        return {}
+
+    return raw_lang_data
+
 
 # --- Modified Loading and Parsing Logic ---
 
@@ -101,13 +131,25 @@ def load_chapter_data(chapters_dir_path: str) -> Dict[str, Any]:
 
     return raw_chapter_data
 
-def parse_chapters(raw_chapter_data: Dict[str, Any]) -> Dict[str, Chapter]:
+def parse_chapters(raw_chapter_data: Dict[str, Any], lang_data: Dict[str, str]) -> Dict[str, Chapter]:
     """Parse raw chapter data into Chapter objects (Pydantic mounting)."""
     parsed_chapters = {}
 
     for chapter_filename, chapter_dict in raw_chapter_data.items():
         # Use the filename (minus extension) as the clean key
         chapter_key = chapter_filename.replace(".snbt", "")
+
+        # Quest Titles Injection from Language File
+        if 'quests' in chapter_dict:
+            for quest in chapter_dict['quests']:
+                quest_id = quest.get('id')
+                if quest_id:
+                    # Localization key format: quest.<ID>.title
+                    lang_key = f"quest.{quest_id}.title"
+                    if lang_key in lang_data:
+                        # Inject the title into the raw dictionary for Pydantic to pick up
+                        quest['title'] = lang_data[lang_key]
+
         try:
             chapter_object = Chapter.model_validate(chapter_dict)
             parsed_chapters[chapter_key] = chapter_object
@@ -129,13 +171,16 @@ def load_and_parse_all() -> Dict[str, Chapter]:
     
     # Step 2: Load the raw data using the discovered path
     raw_data = load_chapter_data(chapters_path)
+
+    # Step 3: Load the language data
+    lang_data = load_language_data()
     
     if not raw_data:
         print("No quest files were loaded. Exiting.")
         return {}
         
-    # Step 3: Parse and mount the data into Pydantic objects
-    return parse_chapters(raw_data)
+    # Step 4: Parse and mount the data into Pydantic objects
+    return parse_chapters(raw_data, lang_data)
 
 # NOTE: Your main application script should now call load_and_parse_all() 
 # to get the fully structured and mounted data.

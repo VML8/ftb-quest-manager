@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ftb-quest-manager"
-version = "1.0.0"
+version = "1.1.0"
 description = "A Python tool for viewing and navigating FTB (Feed The Beast) quest data"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "FTB Quest Viewer Developer", email = "developer@example.com"}
+    {name = "FTB Quest Viewer Developer", email = "vasiliosmatsouka@gmail.com"}
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
