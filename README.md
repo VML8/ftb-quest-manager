@@ -1,3 +1,5 @@
+The README file has been renewed based on the current project structure, ensuring the file paths and module names align with the uploaded code.
+
 # FTB Quest Viewer
 
 A Python tool for viewing and navigating FTB (Feed The Beast) quest data from Minecraft modpacks. This tool parses SNBT quest and language files and provides an interactive, modular command-line interface to explore quest chapters, individual quests, tasks, and rewards.
@@ -13,7 +15,8 @@ A Python tool for viewing and navigating FTB (Feed The Beast) quest data from Mi
   - Advancement requirements
   - Item components and metadata
 - **SNBT File Support:** Automatically loads and parses FTB quest data from SNBT files.
-- **Cross-Platform:** Works on Windows, Linux, and macOS.
+
+***
 
 ## Installation
 
@@ -52,6 +55,8 @@ For development with editable installs:
 pip install -e .
 ```
 
+-----
+
 ## Usage
 
 ### Command-Line Interface
@@ -76,7 +81,7 @@ The package exposes Pydantic models and utility functions for programmatic use:
 
 ```python
 from module import load_chapter_data, parse_chapters, load_language_data
-from module.quest_models import Chapter, Quest
+from module.model.quest_models import Chapter, Quest # Note: Model classes are in module.model
 
 # 1. Load data
 chapters_dir = find_chapters_directory()
@@ -95,10 +100,10 @@ for quest in chapter.quests:
 
 ### Data Models
 
-The package provides Pydantic models for type-safe quest data in `module/quest_models.py`.
+The package provides Pydantic models for type-safe quest data in `module/model/quest_models.py`.
 
 ```python
-from module.quest_models import Quest, Chapter, Task, Reward, Item
+from module.model.quest_models import Quest, Chapter, Task, Reward, Item
 
 # Access quest properties
 quest: Quest = chapter.quests[0]
@@ -107,15 +112,19 @@ print(f"Position: ({quest.x}, {quest.y})")
 print(f"Dependencies: {quest.dependencies}")
 ```
 
+-----
+
 ## Configuration
 
-The application automatically attempts to find quest data. It looks for the chapters directory and the language file based on the script's location or current working directory. The default path definition is maintained in `module/quest_config.py`:
+The application automatically attempts to find quest data. It looks for the chapters directory and the language file based on the script's location or current working directory. The default path definition is maintained in `module/controller/quest_config.py`:
 
 ```python
 # Modify these constants to adjust file discovery if necessary
 FTBQ_DIR = "../config/ftbquests/"
 LANG_DIR = "../config/ftbquests/quests/lang/en_us.snbt"
 ```
+
+-----
 
 ## Requirements
 
@@ -124,23 +133,38 @@ LANG_DIR = "../config/ftbquests/quests/lang/en_us.snbt"
   - ftb-snbt-lib==0.4.0
   - colorama\>=0.4.6
 
+-----
+
 ## Project Structure
+
+The project follows a modified Model-View-Controller (MVC) pattern, separating data models, display logic, and control/loading logic.
 
 ```
 Quest Manager/
-├── module/                 # Main package directory
+├── module/                 # Main Python package
 │   ├── __init__.py         # Package initialization and exports
-│   ├── quest_models.py     # Pydantic data models
-│   ├── quest_navigator.py  # Display logic (formerly view)
-│   ├── ftb_loader.py       # SNBT file loading and parsing (now handles lang file)
-│   └── quest_config.py     # Configuration constants
+│   ├── __main__.py         # Entry point for module execution
+│   ├── controller/         # Business logic and file I/O
+│   │   ├── ftb_loader.py   # SNBT file loading and parsing (includes lang file logic)
+│   │   ├── quest_config.py # Configuration constants
+│   │   └── quest_edit.py   # Data editing functions
+│   ├── model/              # Pydantic data models
+│   │   └── quest_models.py # Chapter, Quest, Task, Reward, Item models
+│   └── view/               # Display and presentation logic
+│       ├── display_chapters.py # Chapter list display
+│       ├── display_quests.py   # Quest list and detail display
+│       └── display_task_reward.py # Task and reward detail display
 ├── tests/                  # Unit tests directory
+│   └── test_full_suite.py  # Comprehensive test suite
 ├── cli.py                  # Main command-line entry point
 ├── pyproject.toml          # Modern Python packaging configuration
-├── setup.py                # Fallback packaging configuration
+├── setup.py                # Setuptools configuration
 ├── requirements.txt        # Python dependencies
+├── LICENSE                 # Project license (MIT)
 └── README.md
 ```
+
+-----
 
 ## Development
 
@@ -158,9 +182,13 @@ pytest tests/
 python -m build
 ```
 
+-----
+
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License - see [LICENSE](https://www.google.com/search?q=vml8/ftb-quest-manager/ftb-quest-manager-b4673cda0a5fde99923584b5cebae8ef495beb4d/LICENSE) file for details.
+
+-----
 
 ## Contributing
 
@@ -170,6 +198,8 @@ MIT License - see LICENSE file for details.
 4.  Add tests if applicable
 5.  Submit a pull request
 
+-----
+
 ## Support
 
 For issues, questions, or contributions, please:
@@ -178,9 +208,11 @@ For issues, questions, or contributions, please:
   - Create a new issue with detailed information
   - Include your Python version and FTB modpack version
 
+-----
+
 ## Changelog
 
-### Version 1.1.0  \<- New Minor Release
+### Version 1.1.0 \<- New Minor Release
 
   - ✅ **Feature:** Implemented logic to find and inject localized Quest Titles from `en_us.snbt` into models.
   - ✅ **Refactor (MVC Writeover):** Modularized interactive CLI logic in `cli.py` for improved readability.
