@@ -1,18 +1,19 @@
 # FTB Quest Viewer
 
-A Python tool for viewing and navigating FTB (Feed The Beast) quest data from Minecraft modpacks. This tool parses SNBT quest files and provides an interactive command-line interface to explore quest chapters, individual quests, tasks, and rewards.
+A Python tool for viewing and navigating FTB (Feed The Beast) quest data from Minecraft modpacks. This tool parses SNBT quest and language files and provides an interactive, modular command-line interface to explore quest chapters, individual quests, tasks, and rewards.
 
 ## Features
 
-- **Interactive Navigation**: Browse quest chapters and individual quests with a user-friendly command-line interface
-- **Detailed Quest Information**: View comprehensive quest details including coordinates, dependencies, and settings
-- **Task & Reward Analysis**: Drill down into specific tasks and rewards with detailed information including:
+- **Localization Support (New in 1.1.0):** Automatically loads quest titles and names from the `en_us.snbt` language file for a localized experience.
+- **Interactive Navigation:** Browse quest chapters and individual quests with a modular, user-friendly command-line interface.
+- **Detailed Quest Information:** View comprehensive quest details including coordinates, dependencies, and settings, displayed with color-coded clarity.
+- **Task & Reward Analysis:** Drill down into specific tasks and rewards with detailed information including:
   - Item requirements and rewards with quantities
   - Task types and optional status
   - Advancement requirements
   - Item components and metadata
-- **SNBT File Support**: Automatically loads and parses FTB quest data from SNBT files
-- **Cross-Platform**: Works on Windows, Linux, and macOS
+- **SNBT File Support:** Automatically loads and parses FTB quest data from SNBT files.
+- **Cross-Platform:** Works on Windows, Linux, and macOS.
 
 ## Installation
 
@@ -20,32 +21,33 @@ A Python tool for viewing and navigating FTB (Feed The Beast) quest data from Mi
 
 1. Clone or download the repository
 2. Navigate to the Quest Manager directory
-3. Install dependencies:
-   ```bash
+3. Install dependencies (Requires Python 3.10+):
+```bash
    pip install -r requirements.txt
-   ```
-   Note: If requirements.txt is empty, install from pyproject.toml dependencies: `pip install pydantic>=2.0.0 ftb_snbt_lib>=1.0.0`
-4. Run the application:
-   ```bash
-   python cli.py
-   ```
+```
+
+4.  Run the application:
+    ```bash
+    python cli.py
+    ```
 
 ### As a Package
 
-1. Install the package:
-   ```bash
-   pip install .
-   ```
-2. Run the viewer:
-   ```bash
-   ftb-quest-viewer
-   # or alternatively:
-   ftb-viewer
-   ```
+1.  Install the package:
+    ```bash
+    pip install .
+    ```
+2.  Run the viewer:
+    ```bash
+    ftb-quest-manager
+    # or alternatively:
+    ftb-manager
+    ```
 
 ### Development Installation
 
 For development with editable installs:
+
 ```bash
 pip install -e .
 ```
@@ -54,124 +56,99 @@ pip install -e .
 
 ### Command-Line Interface
 
-The application provides a hierarchical navigation system:
+The application provides a hierarchical navigation system via the main `cli:main` entry point. Run the command without arguments for interactive mode, or with arguments for quick lookups (e.g., `ftb-quest-manager view chapters`).
 
-1. **Chapter Selection**: Choose from available quest chapters
-2. **Quest Selection**: Browse individual quests within a chapter
-3. **Detail View**: Explore detailed information about quests, tasks, and rewards
+1.  **Chapter Selection**: Choose from available quest chapters
+2.  **Quest Selection**: Browse individual quests within a chapter
+3.  **Detail View**: Explore detailed information about quests, tasks, and rewards
 
-#### Navigation Commands
+#### Navigation Commands (Interactive Mode)
 
-- `exit` or `quit`: Exit the application
-- `back`: Return to the previous level
-- `TASKS <number>`: View detailed information about a specific task (e.g., `TASKS 0`)
-- `REWARDS <number>`: View detailed information about a specific reward (e.g., `REWARDS 1`)
+  - `exit` or `quit`: Exit the application
+  - `back`: Return to the previous level
+  - `task <number>`: View detailed information about a specific task (e.g., `task 0`)
+  - `reward <number>`: View detailed information about a specific reward (e.g., `reward 1`)
+  - `edit`: Enter the edit sub-menu for the current chapter or quest (functionality is limited in the current version).
 
 ### Programmatic Usage
 
-You can also use the package programmatically:
+The package exposes Pydantic models and utility functions for programmatic use:
 
 ```python
-from module import load_chapter_data, parse_chapters, view_chapters
+from module import load_chapter_data, parse_chapters, load_language_data
+from module.quest_models import Chapter, Quest
 
-# Load quest data
-raw_data = load_chapter_data()
-chapters = parse_chapters(raw_data)
+# 1. Load data
+chapters_dir = find_chapters_directory()
+raw_data = load_chapter_data(chapters_dir)
+lang_data = load_language_data(chapters_dir) # Load localization data
 
-# Navigate chapters
-chapter = view_chapters(chapters)
+# 2. Parse into Pydantic models
+chapters = parse_chapters(raw_data, lang_data)
 
 # Access quest data directly
+chapter: Chapter = chapters['chapter_key']
 for quest in chapter.quests:
-    print(f"Quest: {quest.id}")
+    print(f"Title: {quest.title}")
     print(f"Tasks: {len(quest.tasks)}")
-    print(f"Rewards: {len(quest.rewards)}")
 ```
 
 ### Data Models
 
-The package provides Pydantic models for type-safe quest data:
+The package provides Pydantic models for type-safe quest data in `module/quest_models.py`.
 
 ```python
-from module import Quest, Chapter, Task, Reward, Item
+from module.quest_models import Quest, Chapter, Task, Reward, Item
 
 # Access quest properties
 quest: Quest = chapter.quests[0]
-print(f"Quest ID: {quest.id}")
+print(f"Quest Title: {quest.title}")
 print(f"Position: ({quest.x}, {quest.y})")
 print(f"Dependencies: {quest.dependencies}")
-
-# Access task details
-for task in quest.tasks:
-    print(f"Task Type: {task.type}")
-    print(f"Count: {task.count}")
-    if task.item:
-        print(f"Item: {task.item.id} x{task.item.count}")
-
-# Access reward details
-for reward in quest.rewards:
-    print(f"Reward Type: {reward.type}")
-    if reward.item:
-        print(f"Item: {reward.item.id} x{reward.item.count}")
 ```
 
 ## Configuration
 
-The application looks for quest data in the `../config/ftbquests/` directory by default (relative to the Quest Manager folder). You can modify this in `module/quest_config.py`:
+The application automatically attempts to find quest data. It looks for the chapters directory and the language file based on the script's location or current working directory. The default path definition is maintained in `module/quest_config.py`:
 
 ```python
-# Modify the FTBQ_DIR constant to point to your quest directory
-FTBQ_DIR = "../path/to/your/ftbquests/"
+# Modify these constants to adjust file discovery if necessary
+FTBQ_DIR = "../config/ftbquests/"
+LANG_DIR = "../config/ftbquests/quests/lang/en_us.snbt"
 ```
 
 ## Requirements
 
-- Python 3.8+
-- pydantic>=2.0.0
-- ftb_snbt_lib>=1.0.0
+  - Python **3.10+** (Required by `python_requires`)
+  - pydantic\>=2.0.0
+  - ftb-snbt-lib==0.4.0
+  - colorama\>=0.4.6
 
 ## Project Structure
 
 ```
 Quest Manager/
 ├── module/                 # Main package directory
-│   ├── __init__.py        # Package initialization and exports
-│   ├── quest_models.py    # Pydantic data models
-│   ├── quest_navigator.py # Navigation and display logic
-│   ├── ftb_loader.py      # SNBT file loading and parsing
-│   └── quest_config.py    # Configuration constants
-├── tests/                 # Unit tests directory
-│   ├── __init__.py
-│   └── test_module.py     # pytest-style tests
-├── cli.py                 # Main entry point script
-├── test_package.py        # Comprehensive test suite
-├── quick_test.py          # Quick verification script
-├── pyproject.toml         # Modern Python packaging configuration
-├── setup.py              # Fallback packaging configuration
-├── requirements.txt       # Python dependencies
-└── README.md             # This file
+│   ├── __init__.py         # Package initialization and exports
+│   ├── quest_models.py     # Pydantic data models
+│   ├── quest_navigator.py  # Display logic (formerly view)
+│   ├── ftb_loader.py       # SNBT file loading and parsing (now handles lang file)
+│   └── quest_config.py     # Configuration constants
+├── tests/                  # Unit tests directory
+├── cli.py                  # Main command-line entry point
+├── pyproject.toml          # Modern Python packaging configuration
+├── setup.py                # Fallback packaging configuration
+├── requirements.txt        # Python dependencies
+└── README.md
 ```
 
 ## Development
 
 ### Running Tests
 
-The package includes comprehensive test suites:
-
 ```bash
-# Quick verification (recommended)
-python quick_test.py
-
-# Comprehensive testing
-python test_package.py
-
 # Unit tests (pytest format)
-python -m pytest tests/
-# or if pytest is installed:
 pytest tests/
-
-# Or run the main application directly
-python cli.py
 ```
 
 ### Building the Package
@@ -179,18 +156,7 @@ python cli.py
 ```bash
 # Build distribution packages
 python -m build
-
-# Or with setuptools
-python setup.py sdist bdist_wheel
 ```
-
-### Adding New Features
-
-1. Add functionality to the appropriate module in `module/`
-2. Update the `__init__.py` to export new functions/classes
-3. Add tests in `tests/test_module.py`
-4. Update documentation in README.md
-5. Update version in `__init__.py` and `pyproject.toml`
 
 ## License
 
@@ -198,32 +164,48 @@ MIT License - see LICENSE file for details.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+1.  Fork the repository
+2.  Create a feature branch
+3.  Make your changes
+4.  Add tests if applicable
+5.  Submit a pull request
 
 ## Support
 
 For issues, questions, or contributions, please:
-- Check the Issues page on GitHub
-- Create a new issue with detailed information
-- Include your Python version and FTB modpack version
+
+  - Check the Issues page on GitHub
+  - Create a new issue with detailed information
+  - Include your Python version and FTB modpack version
 
 ## Changelog
 
+### Version 1.1.0  \<- New Minor Release
+
+  - ✅ **Feature:** Implemented logic to find and inject localized Quest Titles from `en_us.snbt` into models.
+  - ✅ **Refactor (MVC Writeover):** Modularized interactive CLI logic in `cli.py` for improved readability.
+  - ✅ **Refactor:** Renamed viewing logic from `view` to `display` across functions and files (e.g., `quest_navigator.py`).
+  - ✅ **Fix:** Resolved `TypeError` in quest display by converting the dependency list to a string (`", ".join()`).
+  - ✅ **Fix:** Updated path logic for robust cross-platform language file discovery.
+
 ### Version 1.0.1
-- ✅ Fixed config directory paths for Quest Manager structure
-- ✅ Added comprehensive test suite (`test_package.py`, `quick_test.py`)
-- ✅ Added unit tests (`tests/test_module.py`)
-- ✅ Updated documentation with testing instructions
-- ✅ Restructured package into Quest Manager folder
-- ✅ Corrected main script reference to `cli.py` and noted entry point discrepancies
+
+  - ✅ Fixed config directory paths for Quest Manager structure
+  - ✅ Added comprehensive test suite (`test_package.py`, `quick_test.py`)
+  - ✅ Added unit tests (`tests/test_module.py`)
+  - ✅ Updated documentation with testing instructions
+  - ✅ Restructured package into Quest Manager folder
+  - ✅ Corrected main script reference to `cli.py` and noted entry point discrepancies
 
 ### Version 1.0.0
-- Initial release
-- Interactive quest navigation
-- Detailed task and reward viewing
-- SNBT file parsing
-- Command-line interface
+
+  - Initial release
+  - Interactive quest navigation
+  - Detailed task and reward viewing
+  - SNBT file parsing
+  - Command-line interface
+
+<!-- end list -->
+
+```
+```
