@@ -1,0 +1,56 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: ""
+	filename: "ae2"
+	group: "1762581C74A6AA93"
+	id: "5571D3126CC74A4D"
+	order_index: 0
+	quest_links: [ ]
+	quests: [{
+		id: "27777A5CD65CF52D"
+		rewards: [{
+			id: "1E7BBCBA4689BB77"
+			item: {
+				count: 1
+				id: "ae2:flawless_budding_quartz"
+			}
+			type: "item"
+		}]
+		tasks: [
+			{
+				id: "7BCF714BA47BACC3"
+				item: { count: 1, id: "ae2:meteorite_compass" }
+				optional_task: true
+				type: "item"
+			}
+			{
+				count: 8L
+				id: "040B4FBBB43C86BA"
+				item: { count: 1, id: "ae2:sky_stone_block" }
+				type: "item"
+			}
+			{
+				id: "20B26628DFD499B4"
+				item: { count: 1, id: "ae2:calculation_processor_press" }
+				type: "item"
+			}
+			{
+				id: "669F38187ADA9DF6"
+				item: { count: 1, id: "ae2:engineering_processor_press" }
+				type: "item"
+			}
+			{
+				id: "4C8E2D981ACAE0AC"
+				item: { count: 1, id: "ae2:logic_processor_press" }
+				type: "item"
+			}
+			{
+				id: "3B0A88FDE6A6FBF5"
+				item: { count: 1, id: "ae2:silicon_press" }
+				type: "item"
+			}
+		]
+		x: 0.0d
+		y: 0.0d
+	}]
+}

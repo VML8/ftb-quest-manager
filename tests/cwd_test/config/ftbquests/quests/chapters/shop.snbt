@@ -1,0 +1,32 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: ""
+	default_repeatable_quest: true
+	filename: "shop"
+	group: ""
+	id: "0825DC43C37BB9E1"
+	order_index: 1
+	quest_links: [ ]
+	quests: [{
+		can_repeat: true
+		id: "2F47C361835F9304"
+		rewards: [{
+			count: 4
+			id: "043163683B23C6D5"
+			item: {
+				count: 1
+				id: "create:experience_nugget"
+			}
+			type: "item"
+		}]
+		tasks: [{
+			consume_items: true
+			count: 16L
+			id: "0C7B7417A40E4773"
+			item: { count: 1, id: "minecraft:quartz" }
+			type: "item"
+		}]
+		x: 0.0d
+		y: 0.0d
+	}]
+}

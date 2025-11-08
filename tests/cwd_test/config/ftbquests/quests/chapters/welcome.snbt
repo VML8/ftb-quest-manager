@@ -1,0 +1,242 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: ""
+	filename: "welcome"
+	group: ""
+	id: "647758C6161A52AF"
+	order_index: 0
+	quest_links: [ ]
+	quests: [
+		{
+			icon: {
+				id: "minecraft:grass_block"
+			}
+			id: "2B665C5D30FC7E86"
+			rewards: [{
+				count: 4
+				id: "65AC6680636196E9"
+				item: {
+					count: 1
+					id: "minecraft:bread"
+				}
+				type: "item"
+			}]
+			shape: "rsquare"
+			tasks: [{
+				advancement: "minecraft:story/root"
+				criterion: ""
+				id: "434E457C0D56A2A1"
+				type: "advancement"
+			}]
+			x: 0.0d
+			y: -2.5d
+		}
+		{
+			dependencies: ["2B665C5D30FC7E86"]
+			icon: {
+				id: "minecraft:apple"
+			}
+			id: "46E93DBB901E4B0E"
+			rewards: [{
+				count: 4
+				id: "2FB185E66EFB64D9"
+				item: {
+					count: 1
+					id: "minecraft:bread"
+				}
+				type: "item"
+			}]
+			shape: "rsquare"
+			tasks: [{
+				id: "5F6931C9D5CC8FE4"
+				type: "checkmark"
+			}]
+			x: 2.0d
+			y: -2.5d
+		}
+		{
+			dependencies: ["2B665C5D30FC7E86"]
+			icon: {
+				id: "waystones:waystone"
+			}
+			id: "468DD0A0480ADDAB"
+			rewards: [{
+				count: 4
+				id: "2736A5A4BDF98652"
+				item: {
+					count: 1
+					id: "minecraft:bread"
+				}
+				type: "item"
+			}]
+			shape: "rsquare"
+			tasks: [{
+				id: "7098263B6DF24D2D"
+				type: "checkmark"
+			}]
+			x: 0.0d
+			y: -0.5d
+		}
+		{
+			dependencies: ["2B665C5D30FC7E86"]
+			icon: {
+				id: "minecraft:map"
+			}
+			id: "6C73E1BB9B998906"
+			rewards: [{
+				count: 4
+				id: "6C9064F959BBF0A2"
+				item: {
+					count: 1
+					id: "minecraft:bread"
+				}
+				type: "item"
+			}]
+			shape: "rsquare"
+			tasks: [{
+				id: "3B8CBE4E06E998C6"
+				type: "checkmark"
+			}]
+			x: 2.0d
+			y: -0.5d
+		}
+		{
+			dependencies: ["2B665C5D30FC7E86"]
+			icon: {
+				id: "buildinggadgets2:gadget_building"
+			}
+			id: "150588F2351A7539"
+			rewards: [{
+				count: 4
+				id: "37BC75746A854C15"
+				item: {
+					count: 1
+					id: "minecraft:bread"
+				}
+				type: "item"
+			}]
+			shape: "rsquare"
+			tasks: [{
+				id: "23148E6C476E4238"
+				type: "checkmark"
+			}]
+			x: -2.0d
+			y: -0.5d
+		}
+		{
+			dependencies: ["2B665C5D30FC7E86"]
+			icon: {
+				id: "gateways:gate_pearl"
+			}
+			id: "54B1A4D1DCC9ACF2"
+			rewards: [{
+				count: 4
+				id: "329259F0DD30948C"
+				item: {
+					count: 1
+					id: "minecraft:bread"
+				}
+				type: "item"
+			}]
+			shape: "rsquare"
+			tasks: [{
+				id: "5E26275EC94F88AA"
+				type: "checkmark"
+			}]
+			x: -2.0d
+			y: -2.5d
+		}
+		{
+			dependencies: ["2B665C5D30FC7E86"]
+			icon: {
+				id: "denseores:dense_diamond_ore"
+			}
+			id: "1A2B3C4D5E6F7890"
+			rewards: [{
+				count: 4
+				id: "37D81649B93290F8"
+				item: {
+					count: 1
+					id: "minecraft:bread"
+				}
+				type: "item"
+			}]
+			shape: "rsquare"
+			tasks: [{
+				id: "06A82CBF58AEB0DD"
+				type: "checkmark"
+			}]
+			x: -2.0d
+			y: -4.5d
+		}
+		{
+			dependencies: ["2B665C5D30FC7E86"]
+			icon: {
+				components: {
+					"minecraft:custom_data": {
+						GunCurrentAmmoCount: 17
+						GunFireMode: "SEMI"
+						GunId: "tacz:glock_17"
+						HasBulletInBarrel: 1b
+					}
+				}
+				id: "tacz:modern_kinetic_gun"
+			}
+			id: "7A28674DC1D382B6"
+			rewards: [
+				{
+					id: "2188CD026B0044A4"
+					item: {
+						components: {
+							"minecraft:custom_data": {
+								GunCurrentAmmoCount: 17
+								GunFireMode: "SEMI"
+								GunId: "tacz:glock_17"
+								HasBulletInBarrel: 1b
+							}
+						}
+						count: 1
+						id: "tacz:modern_kinetic_gun"
+					}
+					type: "item"
+				}
+				{
+					count: 54
+					id: "0D1E64E740583358"
+					item: {
+						components: {
+							"minecraft:custom_data": {
+								AmmoId: "tacz:9mm"
+							}
+							"minecraft:max_stack_size": 60
+						}
+						count: 1
+						id: "tacz:ammo"
+					}
+					type: "item"
+				}
+			]
+			shape: "rsquare"
+			tasks: [{
+				id: "143A9DD0038D2FE8"
+				type: "checkmark"
+			}]
+			x: 2.0d
+			y: -4.5d
+		}
+		{
+			dependencies: ["2B665C5D30FC7E86"]
+			icon: {
+				id: "easy_villagers:trader"
+			}
+			id: "25563CA6CCCC2FA1"
+			shape: "rsquare"
+			tasks: [{
+				id: "00778466F52A5062"
+				type: "checkmark"
+			}]
+			x: 0.0d
+			y: -4.5d
+		}
+	]
+}
