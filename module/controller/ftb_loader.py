@@ -1,186 +1,233 @@
 import os
-import sys
-from typing import Dict, Any
-from pydantic import ValidationError
+from module.controller.snbt_to_json_loader import snbt_to_json
+from typing import Dict, Any, List
+import json
+from rich import print
 
-# Assuming your package structure means quest_models is available via relative import
-# NOTE: This line must be updated if Chapter is not in the same package root.
-from ..model.quest_models import Chapter 
+def list_to_id_dict(lst: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Convert a list of dicts containing 'id' into a dict keyed by id."""
+    new_dict = {}
+    for item in lst:
+        new_dict[item["id"]] = item
+    return new_dict
+    # return {item["id"]: item for item in lst} # I can't read this smh
 
-# Assuming ftb_snbt_lib is installed or available in the environment
-# If fslib is a global module, this import is correct.
-import ftb_snbt_lib as fslib 
+def ftb_loader(cwd = os.getcwd()) -> Dict[str, Any]:
+    _lang_data = {} # temp, don't use, for processing only
 
-# Import lang file
-from .quest_config import LANG_DIR
+    parsed_lang_data = {}
+    chapter_group_data = {}
 
+    # Container for tasks and rewards
+    #? For add or remove tasks/rewards
+    data_quest_tasks_container = {}
+    data_quest_rewards_container = {}
 
-# --- Path Discovery Logic (Integrated from previous steps) ---
-
-# The standard relative path from the modpack root to the chapters directory
-FTB_QUESTS_REL_PATH = os.path.join("config", "ftbquests", "quests", "chapters")
-
-def is_valid_chapters_dir(path: str) -> bool:
-    """Checks if the given path is a readable directory containing SNBT files."""
-    if not os.path.isdir(path):
-        return False
-    # Check for presence of at least one expected quest file (.snbt)
-    try:
-        if any(f.endswith(".snbt") for f in os.listdir(path)):
-            return True
-    except OSError:
-        # Handles potential PermissionError during os.listdir
-        return False
-    return False
-
-def find_chapters_directory() -> str:
-    """
-    Attempts to find the FTB Quests chapters directory using the desired multi-stage approach.
-    """
-    print("\n--- Starting Directory Discovery ---")
-
-    # Attempt 1: Check relative to the current working directory (CWD)
-    # This assumes the script is run from inside the modpack directory.
-    cwd_path = os.path.join(os.getcwd(), FTB_QUESTS_REL_PATH)
-    if is_valid_chapters_dir(cwd_path):
-        print(f"Found Quests: Using CWD path: {cwd_path}")
-        return cwd_path
-
-    # Attempt 2: Check relative to the script's location 
-    # This helps if the script is run via a symlink or launcher shortcut.
-    script_dir = os.path.abspath(os.path.dirname(sys.argv[0]))
-    script_relative_path = os.path.join(script_dir, FTB_QUESTS_REL_PATH)
-    if is_valid_chapters_dir(script_relative_path):
-        print(f"Found Quests: Using script-relative path: {script_relative_path}")
-        return script_relative_path
-        
-    print("Could not automatically detect FTB Quests config.")
+    # Use this variable
+    data = {} # Chapter data access
     
-    # Fallback: User Input Loop
-    while True:
-        print("\n--- Manual Directory Input ---")
-        print("Please provide the absolute path to your modpack's 'chapters' directory.")
-        print(f"Example target path: .../modpack_dir/{os.path.join('config', 'ftbquests', 'quests', 'chapters')}")
-        print("Type 'EXIT' to quit.")
-        
-        user_path = input("Enter Absolute Path: ").strip()
-        
-        if user_path.lower() == 'exit':
-            sys.exit("Quitting program as requested.")
-        
-        if is_valid_chapters_dir(user_path):
-            print(f"Success! Loading from: {user_path}")
-            return user_path
-        else:
-            print(f"Directory invalid or not found. Path checked: {user_path}")
-            print("Ensure the path leads directly to the folder containing .snbt files.")
-
-# --- Load and Map Language File ---
-def load_language_data(chapters_dir_path: str) -> Dict[str, str]:
-    """
-    Load and parse the language file (en_us.snbt) to get localized quest/task names.
-    Returns a dictionary mapping localization keys (e.g., 'quest.ID.title') to strings.
-    """
-    # The chapters directory is: .../config/ftbquests/quests/chapters
-    # The lang file is at:      .../config/ftbquests/quests/lang/en_us.snbt
-    # Path relative to chapters_dir_path is: ../lang/en_us.snbt
+    # Deeper data reference, use for direct access
+    data_quests = {}
+    data_quest_rewards = {}
+    data_quest_tasks = {}
     
-    lang_file_path = os.path.join(chapters_dir_path, os.pardir, "lang", "en_us.snbt")
-    lang_file_path = os.path.normpath(lang_file_path)
+    # Masking full directory path
+    _relpath_start = os.path.join(cwd, "config", "ftbquests")
+    _to_quest = os.path.join(_relpath_start, "quests")
 
-    if not os.path.exists(lang_file_path):
-        print(f"Warning: Language file not found at expected path: {lang_file_path}. Quest titles may be missing.")
-        return {}
+    # File path
+    chapters_dir = os.path.join(_to_quest, "chapters")
+    lang_file = os.path.join(_to_quest, "lang", "en_us.snbt")
+    chapter_groups_file = os.path.join(_to_quest, "chapter_groups.snbt")
     
-    raw_lang_data = {}
-    try:
-        with open(lang_file_path, "r", encoding="utf-8") as f:
-            raw_lang_data = fslib.load(f)
-    except Exception as e:
-        print(f"Error loading language file: {e}")
-        return {}
-
-    return raw_lang_data
-
-
-# --- Modified Loading and Parsing Logic ---
-
-def load_chapter_data(chapters_dir_path: str) -> Dict[str, Any]:
-    """
-    Load and parse FTB quest chapter data from SNBT files using the discovered path.
-    """
-    raw_chapter_data = {}
-    
-    try:
-        # List files in the discovered directory path
-        for chapter_file in os.listdir(chapters_dir_path):
-            if chapter_file.endswith(".snbt"):
-                # Construct the full path using os.path.join for safety
-                full_path = os.path.join(chapters_dir_path, chapter_file)
-                
-                # Open the file and pass the handle to fslib.load
-                with open(full_path, "r", encoding="utf-8") as f:
-                    raw_chapter_data[chapter_file] = fslib.load(f)
-
-    except PermissionError:
-        print(f"Permission denied accessing directory: {chapters_dir_path}")
+    # Open en_us lang file
+    print(f"[bold green]Opening Lang data[/bold green] \n{os.path.relpath(lang_file, _relpath_start)}")
+    try :
+        with open(lang_file, "r") as f:
+            _lang_data = json.loads(snbt_to_json(f.read()))
     except FileNotFoundError:
-        print(f"Directory not found: {chapters_dir_path}")
-    except Exception as e:
-        print(f"Unexpected error during file loading: {e}")
+        print("[bold red]Lang file not found[/bold red]")
+    except PermissionError:
+        print("[bold red]Permission denied[/bold red]")
 
-    return raw_chapter_data
+    # Open chapter_groups_data
+    print(f"[bold green]Opening Chapter groups data[/bold green] \n{os.path.relpath(chapter_groups_file, _relpath_start)}")
+    try:
+        with open(chapter_groups_file, "r") as f:
+            chapter_group_data = json.loads(snbt_to_json(f.read()))
+            chapter_group_data = chapter_group_data.get("chapter_groups")
+    except FileNotFoundError:
+        print("[bold red]Chapter groups data file not found[/bold red]")
+    except PermissionError:
+        print("[bold red]Permission denied[/bold red]")
 
-def parse_chapters(raw_chapter_data: Dict[str, Any], lang_data: Dict[str, str]) -> Dict[str, Chapter]:
-    """Parse raw chapter data into Chapter objects (Pydantic mounting)."""
-    parsed_chapters = {}
+    # Load each chapter file into a dictionary
+    print(f"[bold green]Loading Chapter data[/bold green] \n{os.path.relpath(chapters_dir, _relpath_start)}")
+    try :
+        for file in os.listdir(chapters_dir):
+            with open(os.path.join(chapters_dir, file), "r") as f:
+                obj = json.loads(snbt_to_json(f.read()))
+                filename = obj["filename"]
+                data[filename] = obj
+    except FileNotFoundError:
+        print("[bold red]Chapter file not found[/bold red]")
+    except PermissionError:
+        print("[bold red]Permission denied[/bold red]")
 
-    for chapter_filename, chapter_dict in raw_chapter_data.items():
-        # Use the filename (minus extension) as the clean key
-        chapter_key = chapter_filename.replace(".snbt", "")
+    # Parse Lang Data
+    for key, value in _lang_data.items():
+        context, id, attr = key.split(".")
+        parsed_lang_data[id] = {'context': context, 'attr': attr, 'value': value}
 
-        # Quest Titles Injection from Language File
-        if 'quests' in chapter_dict:
-            for quest in chapter_dict['quests']:
-                quest_id = quest.get('id')
-                if quest_id:
-                    # Localization key format: quest.<ID>.title
-                    lang_key = f"quest.{quest_id}.title"
-                    if lang_key in lang_data:
-                        # Inject the title into the raw dictionary for Pydantic to pick up
-                        quest['title'] = lang_data[lang_key]
+    #! ############ !#
+    #! PHASE 1 DONE !#
+    #! ############ !#
+    #? Parsed data into :
 
-        try:
-            chapter_object = Chapter.model_validate(chapter_dict)
-            parsed_chapters[chapter_key] = chapter_object
-            # print(f"Successfully mounted chapter: {chapter_key}") # Commented for cleaner output
-        except ValidationError as e:
-            # Catch specific Pydantic errors for better debugging
-            print(f"Failed to mount chapter {chapter_key} due to Validation Error.")
-            print(e)
-        except Exception as e:
-            print(f"Failed to mount chapter {chapter_key}: {e}")
+    # data as dict[str, Any]
+    # parsed_lang_data as dict[str, Any]
+    # ? { 
+    # ?   {'id'} :
+    # ?     {'context': context, 'attr': attr, 'value': value} 
+    # ? }
 
-    return parsed_chapters
+    # chapter_group_data as list[dict['id', str(id)]]
+    # ---------------------------------^ Literal 'id' string
+    #! ############ !#
 
-def load_and_parse_all() -> Dict[str, Chapter]:
-    """Orchestrates the path finding, loading, and parsing process."""
+    # Transform for easier navigation
+    for chapter in data:
+        _quest_list = data[chapter]["quests"]
+
+        # list to dict
+        _quest_dict = {}
+        for quest in _quest_list:
+            _key = quest["id"]                 # take quest id
+            
+            # list to dict for task and rewards
+            if "rewards" in quest and isinstance(quest["rewards"], list):
+                quest["rewards"] = list_to_id_dict(quest["rewards"])
+            if "tasks" in quest and isinstance(quest["tasks"], list):
+                quest["tasks"] = list_to_id_dict(quest["tasks"])
+            
+            _quest_dict[_key] = quest          # put as key on temp dict   
+        data[chapter]["quests"] = _quest_dict  # replace list with dict
+
+
+    # Map Language to data (not chapter_group)
+    for _id, _value in parsed_lang_data.items():
+        match _value['context']:
+            
+            case 'chapter':
+                for _ch_key, chapter in data.items():
+                    if chapter['id'] == _id:
+                        data[_ch_key][_value['attr']] = _value['value']
+            
+            case 'quest':
+                for _ch_key, chapter in data.items():
+                    for _q_key, quest in chapter['quests'].items():
+                        if quest['id'] == _id:
+                            data[_ch_key]['quests'][_q_key][_value['attr']] = _value['value']
+
+            case 'task':
+                for _ch_key, chapter in data.items():
+                    for _q_key, quest in chapter['quests'].items():
+                        for _t_key, task in quest['tasks'].items():
+                            if task['id'] == _id:
+                                data[_ch_key]['quests'][_q_key]['tasks'][_t_key][_value['attr']] = _value['value']
+
+            case 'reward':
+                for _ch_key, chapter in data.items():
+                    for _q_key, quest in chapter['quests'].items():
+                        for _r_key, reward in quest['rewards'].items():
+                            if reward['id'] == _id:
+                                data[_ch_key]['quests'][_q_key]['rewards'][_r_key][_value['attr']] = _value['value']
+
+    # Store deeper reference in variable, flattened quest
+    for chapter in data: # loop chapter data ! get chapter key
+
+        if "quests" in data[chapter]: # check if chapter has 'quests' key
+            for quest in data[chapter]["quests"]: # loop quest inside chapter value (using chapter key)
+                
+                # take title as key, fallback to id if no title
+                if "title" in data[chapter]["quests"][quest]:
+                    _for_flat_quest_key = data[chapter]["quests"][quest]["title"]
+                else:
+                    _for_flat_quest_key = data[chapter]["quests"][quest]["id"]
+                
+                # flatten data_quest | using 'title' or 'id'
+                data_quests[_for_flat_quest_key] = data[chapter]["quests"][quest]
+                
+
+                # flatten data_quest_rewards
+                if "rewards" in data[chapter]['quests'][quest]:
+
+                    _rewards = data[chapter]["quests"][quest]["rewards"]
+
+                    #! Required Reference
+                    data_quest_rewards_container[_for_flat_quest_key] = _rewards
+                    
+                    # data_quest_rewards_container[_for_flat_quest_key] = data[chapter]["quests"][quest]["rewards"]  #! <-- Required Reference
+                    
+                    # for reward in data[chapter]['quests'][quest]["rewards"]:
+                    #     if "title" in data[chapter]['quests'][quest]["rewards"][reward]:
+                    #         _for_flat_reward_key = data[chapter]['quests'][quest]["rewards"][reward]["title"]
+                    #     else:
+                    #         _for_flat_reward_key = data[chapter]['quests'][quest]["rewards"][reward]["id"]
+                        
+                        # flatten data_quest_rewards (individual reward)
+                    for reward_id, reward_dict in _rewards.items():
+                        _for_flat_reward_key = reward_dict.get("title", reward_dict.get("id"))
+                        
+                        # flatten data_quest rewards
+                        data_quest_rewards[_for_flat_reward_key] = reward_dict
+
+                # flatten data_quest_tasks
+                if "tasks" in data[chapter]['quests'][quest]:
+
+                    _tasks = data[chapter]["quests"][quest]["tasks"]
+
+                    #! Required Reference
+                    data_quest_tasks_container[_for_flat_quest_key] = _tasks
+                    
+                    #? Poor-cable-management script
+                    # data_quest_tasks_container[_for_flat_quest_key] = data[chapter]["quests"][quest]["tasks"]
+                    #
+                    # for task in data[chapter]['quests'][quest]["tasks"]:
+                    #     if "title" in data[chapter]['quests'][quest]["tasks"][task]:
+                    #         _for_flat_task_key = data[chapter]['quests'][quest]["tasks"][task]["title"]
+                    #     else:
+                    #         _for_flat_task_key = data[chapter]['quests'][quest]["tasks"][task]["id"]
+
+                    for task_id, task_dict in _tasks.items():
+                        _for_flat_task_key = task_dict.get("title", task_dict.get("id"))
+                        
+                        # flatten data_quest tasks (individual task)
+                        data_quest_tasks[_for_flat_task_key] = task_dict
+
+    # print(data_quests)
+    # print(data_quest_rewards)
+    # print("--------------")
+    # print(data_quest_tasks)
+                      
+
+
     
-    # Step 1: Discover the correct directory path
-    chapters_path = find_chapters_directory()
-    
-    # Step 2: Load the raw data using the discovered path
-    raw_data = load_chapter_data(chapters_path)
+    # print(data)
 
-    # Step 3: Load the language data
-    lang_data = load_language_data()
-    
-    if not raw_data:
-        print("No quest files were loaded. Exiting.")
-        return {}
+    # Map language to data (except group attr)
+    # for item in parsed_lang_data:
+    #     _mapping = parsed_lang_data[item]
         
-    # Step 4: Parse and mount the data into Pydantic objects
-    return parse_chapters(raw_data, lang_data)
+    #     match _mapping['context']:
+    #         case 'chapter':
+                
 
-# NOTE: Your main application script should now call load_and_parse_all() 
-# to get the fully structured and mounted data.
+        
+
+    print(json.dumps(data, indent=2))
+    # print(parsed_lang_data)
+    # print(chapter_group_data)
+
+    return data
+

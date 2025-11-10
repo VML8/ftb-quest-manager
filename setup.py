@@ -12,7 +12,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="ftb-quest-manager",
-    version="1.1.0",
+    version="2.0.0",
     author="FTB Quest Manager Developer",
     author_email="vasiliosmatsouka@gmail.com",
     description="A Python tool for viewing and navigating FTB (Feed The Beast) quest data",
