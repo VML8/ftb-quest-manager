@@ -18,6 +18,7 @@ def ftb_loader(cwd = os.getcwd()) -> Dict[str, Any]:
     parsed_lang_data = {}
     chapter_group_data = {}
 
+    #!################################!#
     # Container for tasks and rewards
     #? For add or remove tasks/rewards
     data_quest_tasks_container = {}
@@ -30,7 +31,8 @@ def ftb_loader(cwd = os.getcwd()) -> Dict[str, Any]:
     data_quests = {}
     data_quest_rewards = {}
     data_quest_tasks = {}
-    
+    #!################################!#
+
     # Masking full directory path
     _relpath_start = os.path.join(cwd, "config", "ftbquests")
     _to_quest = os.path.join(_relpath_start, "quests")
@@ -167,15 +169,6 @@ def ftb_loader(cwd = os.getcwd()) -> Dict[str, Any]:
                     #! Required Reference
                     data_quest_rewards_container[_for_flat_quest_key] = _rewards
                     
-                    # data_quest_rewards_container[_for_flat_quest_key] = data[chapter]["quests"][quest]["rewards"]  #! <-- Required Reference
-                    
-                    # for reward in data[chapter]['quests'][quest]["rewards"]:
-                    #     if "title" in data[chapter]['quests'][quest]["rewards"][reward]:
-                    #         _for_flat_reward_key = data[chapter]['quests'][quest]["rewards"][reward]["title"]
-                    #     else:
-                    #         _for_flat_reward_key = data[chapter]['quests'][quest]["rewards"][reward]["id"]
-                        
-                        # flatten data_quest_rewards (individual reward)
                     for reward_id, reward_dict in _rewards.items():
                         _for_flat_reward_key = reward_dict.get("title", reward_dict.get("id"))
                         
@@ -189,15 +182,6 @@ def ftb_loader(cwd = os.getcwd()) -> Dict[str, Any]:
 
                     #! Required Reference
                     data_quest_tasks_container[_for_flat_quest_key] = _tasks
-                    
-                    #? Poor-cable-management script
-                    # data_quest_tasks_container[_for_flat_quest_key] = data[chapter]["quests"][quest]["tasks"]
-                    #
-                    # for task in data[chapter]['quests'][quest]["tasks"]:
-                    #     if "title" in data[chapter]['quests'][quest]["tasks"][task]:
-                    #         _for_flat_task_key = data[chapter]['quests'][quest]["tasks"][task]["title"]
-                    #     else:
-                    #         _for_flat_task_key = data[chapter]['quests'][quest]["tasks"][task]["id"]
 
                     for task_id, task_dict in _tasks.items():
                         _for_flat_task_key = task_dict.get("title", task_dict.get("id"))
@@ -205,29 +189,4 @@ def ftb_loader(cwd = os.getcwd()) -> Dict[str, Any]:
                         # flatten data_quest tasks (individual task)
                         data_quest_tasks[_for_flat_task_key] = task_dict
 
-    # print(data_quests)
-    # print(data_quest_rewards)
-    # print("--------------")
-    # print(data_quest_tasks)
-                      
-
-
-    
-    # print(data)
-
-    # Map language to data (except group attr)
-    # for item in parsed_lang_data:
-    #     _mapping = parsed_lang_data[item]
-        
-    #     match _mapping['context']:
-    #         case 'chapter':
-                
-
-        
-
-    print(json.dumps(data, indent=2))
-    # print(parsed_lang_data)
-    # print(chapter_group_data)
-
-    return data
-
+    return data, data_quests, data_quest_rewards, data_quest_tasks, data_quest_rewards_container, data_quest_tasks_container
