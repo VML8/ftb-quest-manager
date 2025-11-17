@@ -1,6 +1,5 @@
 import os
 import json
-from tracemalloc import start
 import ftb_snbt_lib as slib
 from typing import Dict, List, Any, Optional
 from rich import print
@@ -560,7 +559,7 @@ def display(target_navigation: list[str], data) -> None:
 	data_tree = Tree(f"[bold blue]{target_navigation[0]}[/bold blue]")
 	current_tree = data_tree
 	for item in current_data.keys():
-		if item not in target_navigation:
+		if item not in target_navigation:   # Skip item that will be navigated
 			data_tree.add(item)
 
 	# Loop through target navigation
@@ -569,8 +568,7 @@ def display(target_navigation: list[str], data) -> None:
 		for key, value in current_data.items():
 			if key in target_navigation:
 				temp_tree_reference = current_tree.add(f"[bold green]{key}[/bold green]") # Reference to the deeper tree
-			# else:
-				# current_tree.add(key)
+
 
 		# move data pointer deeper
 		current_data = current_data[step]
@@ -590,7 +588,7 @@ def display(target_navigation: list[str], data) -> None:
 
 				continue
 			
-			temp_tree_reference.add(key) # add attribute
+			temp_tree_reference.add(f"{key}: {value}") # add attribute
 		
 		current_tree = temp_tree_reference.add(f"[bold yellow]{container_name}[/bold yellow]")   # add and highlight container
 		temp_tree_reference = Tree('empty')

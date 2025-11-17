@@ -18,13 +18,23 @@ class NavigationState:
         self.state.pop()
     
     def reset(self):
-        self.state = [NavigationState.cwd_name]
-
+        self.state = [NavigationState.cwd_name]    
+    
     def get_status(self):
         printout = " > ".join(self.state)
         print(printout + ' > ')
-
-
+    
+    def get_place(self):
+        count = len(self.state)
+        match count:
+            case 1:
+                return 'chapters'
+            case 2:
+                return 'quests'
+            case 3:
+                return 'tasks'
+            case 4:
+                return 'rewards'
 
     def go(self, navigate_deeper_to: str):
 
